@@ -30,7 +30,6 @@ ENV/
 .env
 .env.*
 !.env.example
-config.js
 
 # Local Database & Vector Store
 app.db
