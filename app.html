@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CourseMate AI | Pdf Learning assistant</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap');
+
+        :root {
+            --sidebar-width: 280px;
+            --primary: #4f46e5;
+            --primary-glow: rgba(79, 70, 229, 0.08);
+            
+            /* Clean Light Theme Palette */
+            --bg-main: #f9fafb;
+            --bg-card: #ffffff;
+            --bg-sidebar: #f3f4f6;
+            --border-color: rgba(0, 0, 0, 0.06);
+            --border-focus: rgba(79, 70, 229, 0.3);
+            
+            --text-primary: #111827;
+            --text-secondary: #4b5563;
+            --text-muted: #9ca3af;
+            
+            --msg-user: #f3f4f6;
+            --msg-ai: #ffffff;
+            
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --transition-base: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--bg-main); 
+            color: var(--text-primary); 
+            display: flex; 
+            height: 100dvh; 
+            overflow: hidden; 
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* --- Auth Loading Overlay (UX Gate) --- */
+        #auth-loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-main); z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+            flex-direction: column; gap: 1rem;
+        }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 4px solid var(--border-color);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* --- Sidebar & Navigation --- */
+        aside { 
+            width: var(--sidebar-width); 
+            background: var(--bg-sidebar); 
+            border-right: 1px solid var(--border-color); 
+            display: flex; 
+            flex-direction: column; 
+            padding: 1.5rem; 
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            z-index: 1000;
+        }
+
+        .sidebar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+        .logo-area { display: flex; align-items: center; gap: 0.75rem; }
+        .logo-icon { 
+            width: 36px; 
+            height: 36px; 
+            background: var(--primary); 
+            border-radius: 10px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            color: white; 
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2); 
+        }
+        .brand-name { font-weight: 700; font-size: 1.1rem; letter-spacing: -0.02em; color: var(--text-primary); }
+        
+        .close-sidebar { background: none; border: none; font-size: 1.25rem; color: var(--text-secondary); cursor: pointer; }
+
+        /* Premium Glassmorphic User Profile Widget */
+        #sidebar-profile {
+            display: none; 
+            align-items: center; 
+            justify-content: space-between; 
+            padding: 0.85rem; 
+            background: rgba(255, 255, 255, 0.4); 
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: var(--radius-md); 
+            margin-bottom: 1.5rem; 
+            border: 1px solid rgba(255, 255, 255, 0.6); 
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+            transition: var(--transition-base);
+        }
+        
+        .sidebar-profile-info {
+            display: flex; 
+            align-items: center; 
+            gap: 0.75rem; 
+            overflow: hidden;
+        }
+        
+        #sidebar-user-name {
+            font-size: 0.85rem; 
+            font-weight: 600; 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis;
+            color: var(--text-primary);
+        }
+
+        .logout-btn {
+            background: none; 
+            border: none; 
+            color: var(--text-muted); 
+            cursor: pointer; 
+            transition: 0.2s; 
+            padding: 0.25rem;
+            font-size: 1rem;
+        }
+        
+        .logout-btn:hover {
+            color: #ef4444; /* red-500 */
+            transform: scale(1.05);
+        }
+
+        .btn-new-chat { 
+            background: var(--bg-card); 
+            color: var(--text-primary); 
+            border: 1px solid var(--border-color); 
+            padding: 0.75rem; 
+            border-radius: var(--radius-md); 
+            width: 100%; 
+            font-weight: 600; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 0.6rem; 
+            margin-bottom: 1.5rem; 
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition-base);
+        }
+        .btn-new-chat:hover { background: #fafafa; border-color: rgba(0, 0, 0, 0.15); }
+
+        .nav-menu { list-style: none; flex: 1; overflow-y: auto; }
+        .nav-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin: 1.5rem 0 0.5rem 0.5rem; font-weight: 700; }
+        
+        .history-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.7rem 0.8rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            margin-bottom: 0.2rem;
+            transition: 0.2s;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+        .history-item:hover { background: rgba(0, 0, 0, 0.03); color: var(--text-primary); }
+        .history-item.active { background: rgba(79, 70, 229, 0.05); border-color: rgba(79, 70, 229, 0.12); color: var(--primary); font-weight: 500; }
+        .history-item.expired { opacity: 0.6; }
+        .history-item i { width: 18px; font-size: 0.95rem; opacity: 0.8; }
+        
+        .history-text {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+
+        /* --- Main Layout --- */
+        main { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            width: 100%; 
+            background: var(--bg-main); 
+            position: relative; 
+            height: 100dvh;
+        }
+        
+        header { 
+            padding: 1rem 2rem; 
+            border-bottom: 1px solid var(--border-color); 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .auth-btn {
+            display: none; /* Initially hidden */
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition-base);
+        }
+        .auth-btn:hover { background: #4338ca; }
+
+        .chat-container { 
+            flex: 1; 
+            overflow-y: auto; 
+            padding: 2.5rem 2rem; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 2rem; 
+            scroll-behavior: smooth;
+        }
+
+        /* --- Message Styling & Animations --- */
+        .message { 
+            display: flex; 
+            gap: 1.25rem; 
+            max-width: 800px; 
+            width: 100%; 
+            margin: 0 auto; 
+            animation: messageAppear 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes messageAppear {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .avatar { 
+            width: 34px; 
+            height: 34px; 
+            border-radius: 8px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            flex-shrink: 0; 
+            font-size: 0.9rem;
+            border: 1px solid var(--border-color);
+            background: var(--bg-card);
+            box-shadow: var(--shadow-sm);
+        }
+        .ai-avatar { background: rgba(79, 70, 229, 0.05); color: var(--primary); border-color: rgba(79, 70, 229, 0.15); }
+        .user-avatar { background: #27272a; color: #fff; border-color: #27272a; }
+
+        .msg-content { 
+            background: var(--msg-ai); 
+            padding: 1rem 1.25rem; 
+            border-radius: 0 16px 16px 16px; 
+            font-size: 0.95rem; 
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            position: relative;
+            max-width: calc(100% - 48px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .message.user { flex-direction: row-reverse; }
+        .message.user .msg-content { 
+            background: var(--msg-user); 
+            color: var(--text-primary); 
+            border-radius: 16px 0 16px 16px; 
+            border-color: transparent;
+            box-shadow: none;
+        }
+
+        /* Minimal Progress Styling UI */
+        .progress-wrapper {
+            margin-top: 10px;
+            width: 100%;
+            background-color: #e5e7eb;
+            border-radius: 9999px;
+            height: 6px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            background-color: var(--primary);
+            height: 100%;
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+
+        .reupload-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--primary);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: 0.2s;
+        }
+        .reupload-btn:hover { background: #4338ca; }
+
+        /* --- AI Thinking Indicator --- */
+        .typing-indicator { display: flex; gap: 5px; padding: 6px 0; align-items: center; }
+        .typing-indicator span { 
+            width: 6px; height: 6px; background: var(--text-secondary); 
+            border-radius: 50%; animation: bounce 1.4s infinite ease-in-out; 
+        }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce { 0%, 80%, 100% { transform: scale(0.3); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }
+
+        .cursor { display: inline-block; width: 2px; height: 1.15em; background: var(--primary); margin-left: 2px; vertical-align: middle; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* --- Input Area --- */
+        .input-wrapper { 
+            padding: 1.5rem 2rem; 
+            background: linear-gradient(to top, var(--bg-main) 70%, transparent); 
+            position: relative;
+        }
+        
+        .input-container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            display: flex; 
+            align-items: center; 
+            background: var(--bg-card); 
+            border: 1px solid rgba(0, 0, 0, 0.1); 
+            border-radius: 16px; 
+            padding: 0.6rem 0.8rem; 
+            box-shadow: var(--shadow-md);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .input-container:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow), var(--shadow-md); }
+
+        #chat-input { 
+            flex: 1; 
+            border: none; 
+            background: transparent; 
+            padding: 0.6rem; 
+            outline: none; 
+            font-size: 0.95rem; 
+            color: var(--text-primary);
+            max-height: 180px; 
+            min-height: 24px;
+            line-height: 1.4;
+            resize: none; 
+            font-family: inherit;
+        }
+        #chat-input::placeholder { color: var(--text-muted); line-height: 1.4; }
+
+        .action-btn { 
+            background: none; border: none; color: var(--text-secondary); 
+            cursor: pointer; padding: 10px; border-radius: 10px; 
+            transition: all 0.2s; display: flex; align-items: center; justify-content: center;
+        }
+        .action-btn:hover { color: var(--text-primary); background: rgba(0, 0, 0, 0.03); }
+        
+        .send-btn { 
+            background: var(--primary); color: white; 
+            width: 36px; height: 36px; border-radius: 10px; 
+            margin-left: 0.4rem; transition: var(--transition-base);
+            display: flex; align-items: center; justify-content: center;
+            border: none; cursor: pointer;
+        }
+        .send-btn:hover { background: #4338ca; }
+        .send-btn:disabled { background: #e5e7eb; color: var(--text-muted); cursor: not-allowed; box-shadow: none; }
+
+        /* --- Mobile Responsiveness --- */
+        .menu-toggle { display: none; background: none; border: none; font-size: 1.25rem; cursor: pointer; color: var(--text-primary); padding-right: 1rem; }
+
+        #sidebar-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.25); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+            z-index: 999; opacity: 0; transition: opacity 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            #sidebar-overlay.active { display: block; opacity: 1; }
+            aside { position: fixed; left: 0; transform: translateX(-100%); height: 100%; width: 280px; box-shadow: var(--shadow-lg); background: var(--bg-sidebar); }
+            aside.active { transform: translateX(0); }
+            .close-sidebar { display: block; }
+            .menu-toggle { display: block; }
+            .chat-container { padding: 1.5rem 1rem; gap: 1.5rem; }
+            .input-wrapper { padding: 0.75rem 1rem 1.5rem; }
+            .msg-content { max-width: calc(100% - 36px); }
+        }
+
+        .msg-content p { margin-bottom: 0.75rem; }
+        .msg-content p:last-child { margin-bottom: 0; }
+        .msg-content pre { background: #1f2937; color: #f9fafb; padding: 1rem; border-radius: 8px; overflow-x: auto; margin: 1rem 0; font-size: 0.85rem; }
+        .msg-content code { font-family: 'Fira Code', monospace; background: #f3f4f6; padding: 0.2em 0.4em; border-radius: 4px; font-size: 0.9em; color: #db2777; }
+        
+        /* Auth Overlay */
+        #auth-overlay {
+            display: none; /* Initially hidden until auth state resolved */
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(8px);
+            z-index: 2000; align-items: center; justify-content: center;
+        }
+        .auth-card {
+            background: white; padding: 2.5rem; border-radius: 16px;
+            box-shadow: var(--shadow-lg); text-align: center; max-width: 400px; width: 90%;
+        }
+        .auth-card h2 { margin-bottom: 1rem; color: var(--text-primary); }
+        .auth-card p { color: var(--text-secondary); margin-bottom: 2rem; font-size: 0.95rem; }
+        .google-btn {
+            display: flex; align-items: center; justify-content: center; gap: 0.75rem;
+            width: 100%; padding: 0.75rem; border: 1px solid var(--border-color);
+            background: white; border-radius: 8px; font-weight: 600; color: var(--text-primary);
+            cursor: pointer; transition: 0.2s; box-shadow: var(--shadow-sm);
+        }
+        .google-btn:hover { background: #f9fafb; border-color: #d1d5db; }
+        .google-btn img { width: 20px; height: 20px; }
+    </style>
+</head>
+<body>
+
+    <!-- Auth Loading UX Gate -->
+    <div id="auth-loading-overlay">
+        <div class="spinner"></div>
+        <div style="color: var(--text-secondary); font-size: 0.9rem; font-weight: 500;">Authenticating...</div>
+    </div>
+
+    <!-- Optional local/deployment configuration; copy config.example.js to config.js. -->
+    <script src="config.js"></script>
+
+    <!-- Firebase SDK Integration -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+        // DEVELOPER NOTE: Firebase Web Client config objects are safe to be public
+        // as they only identify your project to Google's servers.
+        // HOWEVER, you MUST enforce domain restrictions (e.g., localhost, yourdomain.com)
+        // in your Firebase Console -> Authentication -> Settings -> Authorized domains
+        // and Google Cloud Console -> API Restrictions to prevent unauthorized usage.
+        const firebaseConfig = window.COURSEMATE_FIREBASE_CONFIG || {
+            apiKey: "",
+            authDomain: "",
+            projectId: "",
+            storageBucket: "",
+            messagingSenderId: "",
+            appId: "",
+            measurementId: ""
+        };
+
+        window.firebaseApp = null;
+        window.firebaseAuth = null;
+
+        try {
+            // Guardrail to prevent local file protocol exceptions
+            if (window.location.protocol === "file:") {
+                console.warn("Firebase Auth blocked due to file:/// protocol execution.");
+                document.getElementById('auth-overlay').innerHTML = `
+                    <div class="auth-card">
+                        <h2 style="color: #ef4444;">Environment Error</h2>
+                        <p>Firebase Authentication cannot run via <code>file:///</code> protocol.</p>
+                        <p>Please host this page via the FastAPI backend (e.g., <code>http://localhost:8000/</code>) to prevent redirect loops.</p>
+                    </div>`;
+                document.getElementById('auth-overlay').style.display = 'flex';
+                document.getElementById('auth-loading-overlay').style.display = 'none';
+                throw new Error("File protocol unsupported");
+            }
+
+            window.firebaseApp = initializeApp(firebaseConfig);
+            window.firebaseAuth = getAuth(window.firebaseApp);
+            const provider = new GoogleAuthProvider();
+
+            // We safely utilize signInWithPopup because FastAPI natively serves app.html 
+            // bypassing COOP policy conflicts generated from third-party static watcher servers.
+            window.loginWithGoogle = (e) => {
+                if (e) e.preventDefault();
+                signInWithPopup(window.firebaseAuth, provider)
+                    .then((result) => {
+                        console.log("Successfully authenticated via popup.");
+                    })
+                    .catch((error) => {
+                        console.error("Popup login failed:", error);
+                        alert("Login Flow Interrupt. Please try signing in again.");
+                    });
+            };
+
+            window.logout = async (e) => {
+                if (e) e.preventDefault();
+                try {
+                    await signOut(window.firebaseAuth);
+                    // Drop local states and reset view payload securely. 
+                    // CRITICAL: We NEVER call window.location.reload() to prevent cyclic infinite loops.
+                    document.getElementById('sidebar-profile').style.display = 'none';
+                    document.getElementById('auth-overlay').style.display = 'flex';
+                    document.getElementById('history-list').innerHTML = '';
+                    startNewChat();
+                    console.log("User successfully signed out. Local state purged.");
+                } catch (err) {
+                    console.error("Logout failed:", err);
+                }
+            };
+
+            onAuthStateChanged(window.firebaseAuth, async (user) => {
+                const overlay = document.getElementById('auth-overlay');
+                const loadingOverlay = document.getElementById('auth-loading-overlay');
+                
+                if (user) {
+                    try {
+                        overlay.style.display = 'none';
+                        loadingOverlay.style.display = 'none';
+                        
+                        // Setup Profile Widget
+                        const profileWidget = document.getElementById('sidebar-profile');
+                        const userNameEl = document.getElementById('sidebar-user-name');
+                        profileWidget.style.display = 'flex';
+                        
+                        // Map primary e-mail prefix if displayName is null
+                        const userName = user.displayName || (user.email ? user.email.split('@')[0] : 'User');
+                        userNameEl.innerText = userName;
+                        
+                        loadHistory(); // Load history after auth recovery
+                        console.log(`Auth state initialized for user UID: ${user.uid}`);
+                    } catch(err) {
+                        console.error("Token fetch failed:", err);
+                        loadingOverlay.style.display = 'none';
+                    }
+                } else {
+                    document.getElementById('sidebar-profile').style.display = 'none';
+                    overlay.style.display = 'flex';
+                    loadingOverlay.style.display = 'none';
+                    console.log("Auth state resolved to: Unauthenticated.");
+                }
+            });
+        } catch (error) {
+            console.error("Firebase Initialization Error:", error);
+            if (window.location.protocol !== "file:") {
+                document.getElementById('auth-overlay').style.display = 'none';
+                document.getElementById('auth-loading-overlay').style.display = 'none';
+                console.warn("Running in unauthenticated fallback mode. Update firebaseConfig.");
+            }
+        }
+    </script>
+
+    <div id="auth-overlay">
+        <div class="auth-card">
+            <div class="logo-icon" style="margin: 0 auto 1.5rem auto;"><i class="fas fa-brain"></i></div>
+            <h2>Welcome to CourseMate AI</h2>
+            <p>Please sign in to save your documents and chat history securely.</p>
+            <button type="button" class="google-btn" onclick="if(window.loginWithGoogle) window.loginWithGoogle(event)">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+                Continue with Google
+            </button>
+        </div>
+    </div>
+
+    <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <aside id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-area">
+                <div class="logo-icon"><i class="fas fa-brain"></i></div>
+                <span class="brand-name">CourseMate AI</span>
+            </div>
+            <button type="button" class="close-sidebar" onclick="toggleSidebar()"><i class="fas fa-times"></i></button>
+        </div>
+
+        <!-- Premium Glassmorphic User Profile Widget (Sidebar) -->
+        <div id="sidebar-profile">
+            <div class="sidebar-profile-info">
+                <div class="avatar user-avatar" style="width: 32px; height: 32px; font-size: 0.8rem;">
+                    <i class="fas fa-user"></i>
+                </div>
+                <span id="sidebar-user-name">Loading...</span>
+            </div>
+            <button type="button" class="logout-btn" onclick="if(window.logout) window.logout(event)" title="Sign Out">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
+        </div>
+
+        <button type="button" class="btn-new-chat" onclick="startNewChat(event)">
+            <i class="fas fa-plus"></i> New Chat
+        </button>
+
+        <div class="nav-label">Recent Chats</div>
+        <nav class="nav-menu" id="history-list">
+            <!-- History items will be populated here -->
+        </nav>
+    </aside>
+
+    <main>
+        <header>
+            <div class="header-left" style="display: flex; align-items: center;">
+                <button type="button" class="menu-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+            </div>
+            <h2 style="font-size: 0.95rem; font-weight: 600; position: absolute; left: 50%; transform: translateX(-50%); margin: 0; color: var(--text-primary); letter-spacing: -0.01em;">CourseMate AI</h2>
+            
+            <div class="header-right">
+                <div id="upload-status" style="font-size: 0.8rem; color: var(--primary); font-weight: 600;"></div>
+            </div>
+        </header>
+
+        <div class="chat-container" id="chat-window">
+            <div class="message ai" id="welcome-msg">
+                <div class="avatar ai-avatar"><i class="fas fa-robot"></i></div>
+                <div class="msg-content">
+                    Hello! 👋 I'm your AI learning assistant. Upload a PDF or DOC/DOCX document (max 10 pages, 10MB), and I'll help you summarize it, find key information, or answer any questions you have.
+                </div>
+            </div>
+        </div>
+
+        <div class="input-wrapper">
+            <div class="input-container">
+                <input type="file" id="pdf-upload" hidden accept=".pdf,.doc,.docx">
+                <button type="button" class="action-btn" title="Upload Document" onclick="document.getElementById('pdf-upload').click()">
+                    <i class="fas fa-paperclip"></i>
+                </button>
+                
+                <textarea id="chat-input" placeholder="Ask a question..." rows="1" oninput="autoResize(this)"></textarea>
+                
+                <button type="button" class="send-btn" id="send-btn" onclick="sendMessage(event)">
+                    <i class="fas fa-arrow-up"></i>
+                </button>
+            </div>
+            <p style="font-size: 0.65rem; color: var(--text-muted); text-align: center; margin-top: 0.75rem; letter-spacing: 0.01em;">
+                CourseMate AI responds solely based on your uploaded file.
+            </p>
+        </div>
+    </main>
+
+    <script>
+        // Set window.COURSEMATE_API_URL in an optional config.js for separate frontend hosting.
+        // When served by FastAPI, same-origin relative URLs work automatically.
+        const API_BASE_URL = window.COURSEMATE_API_URL || window.location.origin;
+        
+        let session_id = null;
+        let isTyping = false;
+        let progressSource = null;
+        
+        const chatWindow = document.getElementById('chat-window');
+        const chatInput = document.getElementById('chat-input');
+        const fileInput = document.getElementById('pdf-upload');
+        const sendBtn = document.getElementById('send-btn');
+        const uploadStatus = document.getElementById('upload-status');
+        const historyList = document.getElementById('history-list');
+
+        // Asynchronous blocking wrapper to guarantee a fresh Firebase Token before network execution
+        async function getAuthHeaders() {
+            if (!window.firebaseAuth || !window.firebaseAuth.currentUser) {
+                console.warn("[AUTH INTROSPECTION] No currentUser detected in Firebase Auth instance.");
+                return {};
+            }
+            try {
+                // Force a fresh token retrieval to prevent sending expired JWTs
+                const freshToken = await window.firebaseAuth.currentUser.getIdToken(true);
+                if (freshToken && freshToken.length > 50) {
+                    console.log(`[AUTH INTROSPECTION] Valid Token Generated (Length: ${freshToken.length})`);
+                    return { 'Authorization': `Bearer ${freshToken}` };
+                } else {
+                    console.error("[AUTH INTROSPECTION] Generated token string is invalid or unexpectedly short.");
+                    return {};
+                }
+            } catch (err) {
+                console.error("[AUTH INTROSPECTION EXCEPTION] Failed to generate getIdToken:", err);
+                return {};
+            }
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('active');
+            document.getElementById('sidebar-overlay').classList.toggle('active');
+        }
+
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+        }
+
+        function scrollToBottom() {
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        function startNewChat(e) {
+            if (e) e.preventDefault();
+            session_id = null;
+            chatWindow.innerHTML = `
+                <div class="message ai" id="welcome-msg">
+                    <div class="avatar ai-avatar"><i class="fas fa-robot"></i></div>
+                    <div class="msg-content">
+                        Hello! 👋 I'm your AI learning assistant. Upload a PDF or DOC/DOCX document (max 10 pages, 10MB), and I'll help you summarize it, find key information, or answer any questions you have.
+                    </div>
+                </div>
+            `;
+            chatInput.value = '';
+            uploadStatus.innerText = '';
+            document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
+            if(window.innerWidth <= 768) toggleSidebar();
+        }
+
+        async function loadHistory() {
+            try {
+                console.log("[FETCH /history] Blocking until fresh token retrieves...");
+                const headers = await getAuthHeaders();
+                const response = await fetch(`${API_BASE_URL}/history`, { 
+                    method: 'GET',
+                    headers: headers 
+                });
+                if (!response.ok) {
+                    console.error("[FETCH /history] Backend returned:", response.status);
+                    return;
+                }
+                const data = await response.json();
+                
+                historyList.innerHTML = '';
+                data.history.forEach(item => {
+                    const el = document.createElement('div');
+                    el.className = `history-item ${item.is_expired ? 'expired' : ''}`;
+                    el.id = `hist-${item.session_id}`;
+                    el.onclick = (e) => {
+                        e.preventDefault();
+                        loadChatSession(item.session_id);
+                    };
+                    
+                    const icon = item.is_expired ? 'fa-file-circle-xmark' : 'fa-file-pdf';
+                    
+                    el.innerHTML = `
+                        <i class="fas ${icon}"></i>
+                        <span class="history-text" title="${item.filename}">${item.filename}</span>
+                    `;
+                    historyList.appendChild(el);
+                });
+            } catch(e) {
+                console.error("[FETCH /history] Request Failed:", e);
+            }
+        }
+
+        async function loadChatSession(sid) {
+            session_id = sid;
+            document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
+            const activeEl = document.getElementById(`hist-${sid}`);
+            if(activeEl) activeEl.classList.add('active');
+            
+            chatWindow.innerHTML = '';
+            uploadStatus.innerText = 'Loading...';
+            
+            try {
+                console.log(`[FETCH /chat/${sid}] Blocking until fresh token retrieves...`);
+                const headers = await getAuthHeaders();
+                const response = await fetch(`${API_BASE_URL}/chat/${sid}`, { 
+                    method: 'GET',
+                    headers: headers 
+                });
+                
+                if (!response.ok) {
+                    console.error(`[FETCH /chat/${sid}] Backend returned:`, response.status);
+                    throw new Error(`Failed to load chat. HTTP: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                uploadStatus.innerText = data.is_expired ? 'Archived Session' : 'Active Session';
+                console.log(`[RENDER] Processing ${data.messages.length} messages...`);
+                
+                // Clear chat window entirely BEFORE rendering historical messages
+                chatWindow.innerHTML = '';
+
+                if (data.messages.length === 0) {
+                    appendMessage('ai', `Loaded session for **${data.filename}**. How can I help you?`);
+                } else {
+                    // Iterate and append the complete array payload via in-place DOM updates
+                    data.messages.forEach((msg, index) => {
+                        console.log(`[RENDER] Appending message ${index + 1}/${data.messages.length} (${msg.role})`);
+                        appendMessage(msg.role, msg.message, false);
+                    });
+                }
+                
+                if (data.is_expired) {
+                    appendMessage('ai', `🔒 For your privacy, the original document was automatically deleted from our servers. I remember our conversation, but to ask new document-specific questions, please re-upload the PDF to this chat.<br><br>
+                    <button type="button" class="reupload-btn" onclick="document.getElementById('pdf-upload').click()">
+                        <i class="fas fa-upload"></i> Re-Upload Document
+                    </button>`);
+                }
+                
+                scrollToBottom();
+                if(window.innerWidth <= 768) toggleSidebar();
+            } catch(e) {
+                console.error(e);
+                uploadStatus.innerText = '';
+                appendMessage('ai', '❌ Failed to load chat history.');
+            }
+        }
+
+        fileInput.addEventListener('change', async (e) => {
+            e.preventDefault(); // Defeat default form actions
+            
+            const file = e.target.files[0];
+            if(!file) return;
+
+            const lowerName = file.name.toLowerCase();
+            if (!lowerName.endsWith('.pdf') && !lowerName.endsWith('.doc') && !lowerName.endsWith('.docx')) {
+                uploadStatus.innerText = "Validation Rejection";
+                appendMessage('ai', `⚠️ **Upload Rejected:** Invalid format file layout.`);
+                fileInput.value = '';
+                return;
+            }
+
+            const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+            if (file.size > MAX_SIZE_BYTES) {
+                uploadStatus.innerText = "Validation Rejection";
+                appendMessage('ai', `⚠️ **Upload Rejected:** File exceeds 10MB limit.`);
+                fileInput.value = '';
+                return;
+            }
+
+            uploadStatus.innerText = "Uploading...";
+            
+            const loaderId = 'upload-loader-' + Date.now();
+            const loaderDiv = document.createElement('div');
+            loaderDiv.className = 'message ai';
+            loaderDiv.id = loaderId;
+            loaderDiv.innerHTML = `
+                <div class="avatar ai-avatar"><i class="fas fa-robot"></i></div>
+                <div class="msg-content" style="width: 100%;">
+                    <div id="dynamic-loading-text">
+                        <i class="fas fa-cloud-upload-alt" style="margin-right: 8px;"></i> Uploading <strong>${file.name}</strong>: <span id="upload-pct">0%</span>
+                    </div>
+                    <div class="progress-wrapper">
+                        <div class="progress-bar" id="upload-progress-bar"></div>
+                    </div>
+                </div>
+            `;
+            chatWindow.appendChild(loaderDiv);
+            scrollToBottom();
+
+            // Asynchronously await fresh token BEFORE initializing the XHR payload
+            console.log("[XHR /upload] Blocking until fresh token retrieves...");
+            const headers = await getAuthHeaders();
+            
+            const xhr = new XMLHttpRequest();
+            const formData = new FormData();
+            formData.append('file', file);
+            if (session_id) {
+                formData.append('session_id', session_id);
+            }
+
+            xhr.upload.addEventListener('progress', (event) => {
+                if (event.lengthComputable) {
+                    const percentage = Math.round((event.loaded / event.total) * 100);
+                    const pctElement = document.getElementById('upload-pct');
+                    const barElement = document.getElementById('upload-progress-bar');
+                    if (pctElement) pctElement.innerText = percentage + '%';
+                    if (barElement) barElement.style.width = percentage + '%';
+                }
+            });
+
+            xhr.onreadystatechange = () => {
+                if (xhr.readyState === XMLHttpRequest.DONE) {
+                    try {
+                        if (xhr.status === 401) {
+                            console.error("[XHR /upload] HTTP 401 Unauthorized Block Detected on Upload!");
+                        }
+                        
+                        const data = JSON.parse(xhr.responseText);
+                        
+                        if (data.error || data.detail) {
+                            if (progressSource) progressSource.close();
+                            loaderDiv.remove();
+                            uploadStatus.innerText = "Upload failed";
+                            appendMessage('ai', `⚠️ HTTP ${xhr.status}: ${data.error || data.detail}`);
+                            fileInput.value = '';
+                            return;
+                        }
+                        
+                        session_id = data.session_id;
+                        loadHistory(); // Refresh sidebar via DOM appending
+                        
+                        if (progressSource) progressSource.close();
+                        
+                        progressSource = new EventSource(`${API_BASE_URL}/progress/${session_id}`);
+                        
+                        progressSource.onmessage = (event) => {
+                            try {
+                                const state = JSON.parse(event.data);
+                                
+                                const textEl = document.getElementById('dynamic-loading-text');
+                                const barElement = document.getElementById('upload-progress-bar');
+                                const pctElement = document.getElementById('upload-pct');
+                                
+                                if (pctElement) pctElement.innerText = state.progress + '%';
+                                if (barElement) barElement.style.width = state.progress + '%';
+                                
+                                if (textEl) {
+                                    textEl.innerHTML = `<i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i> ${state.message}`;
+                                }
+                                
+                                if (state.progress === 100) {
+                                    progressSource.close();
+                                    progressSource = null;
+                                    loaderDiv.remove();
+                                    uploadStatus.innerText = "Ready";
+                                    appendMessage('ai', `✅ Analysis complete! **${file.name}** has been processed. Let me know what questions you have.`);
+                                    fileInput.value = '';
+                                    return;
+                                }
+                                
+                                if (state.is_error) {
+                                    progressSource.close();
+                                    progressSource = null;
+                                    loaderDiv.remove();
+                                    uploadStatus.innerText = "Pipeline error";
+                                    appendMessage('ai', `❌ Processing Error: ${state.message}`);
+                                    fileInput.value = '';
+                                }
+                            } catch (parseErr) {
+                                console.log(parseErr);
+                            }
+                        };
+                        
+                    } catch (err) {
+                        if (progressSource) progressSource.close();
+                        loaderDiv.remove();
+                        uploadStatus.innerText = "Error";
+                        appendMessage('ai', '❌ System Error during upload.');
+                        fileInput.value = '';
+                    }
+                }
+            };
+
+            xhr.open('POST', `${API_BASE_URL}/upload`, true);
+            // Explicitly map dynamic header dictionary to the XHR prototype before .send()
+            for (const key in headers) {
+                console.log(`[XHR /upload] Attaching Request Header: ${key}`);
+                xhr.setRequestHeader(key, headers[key]);
+            }
+            xhr.send(formData);
+        });
+
+        async function sendMessage(e) {
+            if (e) e.preventDefault(); // Stop form triggers from firing native HTTP page loads
+            
+            const query = chatInput.value.trim();
+            if(!query || isTyping) return;
+
+            if (!session_id) {
+                appendMessage('user', query);
+                chatInput.value = '';
+                chatInput.style.height = 'auto';
+                appendMessage('ai', 'Please select and upload a valid PDF document resource before starting the chat.');
+                return;
+            }
+
+            isTyping = true;
+            sendBtn.disabled = true;
+            
+            appendMessage('user', query);
+            chatInput.value = '';
+            chatInput.style.height = 'auto';
+            
+            const thinkingId = 'thinking-' + Date.now();
+            appendThinkingIndicator(thinkingId);
+            scrollToBottom();
+
+            try {
+                console.log("[FETCH /chat] Blocking until fresh token retrieves...");
+                const headers = await getAuthHeaders();
+                
+                const response = await fetch(`${API_BASE_URL}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...headers
+                    },
+                    body: JSON.stringify({ query, session_id })
+                });
+                
+                if (!response.ok) {
+                    console.error("[FETCH /chat] Backend returned:", response.status);
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                removeThinkingIndicator(thinkingId);
+                
+                if (data.requires_reupload) {
+                    appendMessage('ai', `${data.answer}<br><br><button type="button" class="reupload-btn" onclick="document.getElementById('pdf-upload').click()"><i class="fas fa-upload"></i> Re-Upload Document</button>`);
+                } else {
+                    await typeWriterEffect(data.answer);
+                }
+            } catch (err) {
+                removeThinkingIndicator(thinkingId);
+                console.error(err);
+                appendMessage('ai', '⚠️ I encountered an asynchronous network exception. Please submit your inquiry again.');
+            } finally {
+                isTyping = false;
+                sendBtn.disabled = false;
+                chatInput.focus();
+            }
+        }
+
+        function appendMessage(role, text, animate = false) {
+            // Replaced innerHTML concatenation with strict DOM DocumentFragment appends
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${role}`;
+            const icon = role === 'ai' ? 'fa-robot' : 'fa-user';
+            
+            msgDiv.innerHTML = `
+                <div class="avatar ${role}-avatar"><i class="fas ${icon}"></i></div>
+                <div class="msg-content">${marked.parse(text)}</div>
+            `;
+            
+            chatWindow.appendChild(msgDiv);
+            scrollToBottom();
+        }
+
+        function appendThinkingIndicator(id) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message ai';
+            msgDiv.id = id;
+            msgDiv.innerHTML = `
+                <div class="avatar ai-avatar"><i class="fas fa-robot"></i></div>
+                <div class="msg-content">
+                    <div class="typing-indicator"><span></span><span></span><span></span></div>
+                </div>
+            `;
+            chatWindow.appendChild(msgDiv);
+        }
+
+        function removeThinkingIndicator(id) {
+            const el = document.getElementById(id);
+            if(el) el.remove();
+        }
+
+        async function typeWriterEffect(markdownText) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message ai';
+            const id = 'typing-' + Date.now();
+            
+            msgDiv.innerHTML = `
+                <div class="avatar ai-avatar"><i class="fas fa-robot"></i></div>
+                <div class="msg-content" id="${id}"></div>
+            `;
+            chatWindow.appendChild(msgDiv);
+            
+            const target = document.getElementById(id);
+            const rawHtml = marked.parse(markdownText);
+            
+            let i = 0;
+            const interval = setInterval(() => {
+                target.innerHTML = rawHtml.substring(0, i) + '<span class="cursor"></span>';
+                i += 3; 
+                scrollToBottom();
+                if (i >= rawHtml.length) {
+                    clearInterval(interval);
+                    target.innerHTML = rawHtml; 
+                }
+            }, 10);
+        }
+
+        chatInput.addEventListener('keydown', (e) => { 
+            if(e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage(e);
+            }
+        });
+    </script>
+</body>
+</html>

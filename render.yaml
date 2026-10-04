@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: course-mate-api
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: FIREBASE_CREDENTIALS_JSON
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: MISTRAL_API_KEY
+        sync: false
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: HUGGINGFACEHUB_API_TOKEN
+        sync: false

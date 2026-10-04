@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CourseMate AI | AI-powered PDF Learning Assistant</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg: #ffffff;
+            --surface: #f8fafc;
+            --border: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --section-padding: 5rem 5%;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+            background: var(--bg); 
+            color: var(--text-main); 
+            line-height: 1.6; 
+            overflow-x: hidden; 
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* --- Global Components --- */
+        .btn-primary { 
+            background: var(--primary); 
+            color: white; 
+            padding: 0.8rem 1.5rem; 
+            border-radius: 10px; 
+            border: none; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: 0.3s; 
+            text-decoration: none; 
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-2px); }
+
+        .btn-outline { 
+            background: white; 
+            color: var(--text-main); 
+            border: 1px solid var(--border); 
+            padding: 0.8rem 1.5rem; 
+            border-radius: 10px; 
+            font-weight: 600; 
+            text-decoration: none; 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 0.5rem; 
+            transition: 0.3s;
+        }
+        .btn-outline:hover { background: var(--surface); border-color: var(--primary); }
+
+        /* --- Navbar --- */
+        nav { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 1rem 5%; 
+            background: rgba(255, 255, 255, 0.8); 
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border); 
+            position: sticky; 
+            top: 0; 
+            z-index: 1000; 
+        }
+        .logo { font-weight: 800; font-size: 1.25rem; color: var(--primary); text-decoration: none; letter-spacing: -0.5px; }
+        .nav-links { display: flex; gap: 1.5rem; list-style: none; }
+        .nav-links a { text-decoration: none; color: var(--text-muted); font-size: 0.9rem; font-weight: 500; }
+
+        /* --- Hero Section --- */
+        .hero { 
+            padding: 6rem 5% 4rem; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            text-align: center; 
+            max-width: 1200px; 
+            margin: 0 auto; 
+        }
+        .hero-content h1 { 
+            font-size: clamp(2.5rem, 8vw, 4rem); 
+            font-weight: 850; 
+            line-height: 1.1; 
+            margin-bottom: 1.5rem; 
+            color: #111827;
+        }
+        .hero-content p { 
+            font-size: clamp(1.1rem, 2vw, 1.25rem); 
+            color: var(--text-muted); 
+            margin-bottom: 2.5rem; 
+            max-width: 700px; 
+            margin-inline: auto;
+        }
+        .hero-btns { 
+            display: flex; 
+            gap: 1rem; 
+            width: 100%; 
+            justify-content: center; 
+            flex-wrap: wrap;
+        }
+
+        .hero-visual { margin-top: 4rem; width: 100%; max-width: 900px; }
+        .hero-visual img { 
+            width: 100%; 
+            border-radius: 24px; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1); 
+            border: 1px solid var(--border);
+        }
+
+        /* --- Interaction Box --- */
+        .interaction-box { 
+            background: #fdfdff; 
+            border: 1px solid #eef2ff;
+            border-radius: 24px; 
+            padding: 3rem 1.5rem; 
+            text-align: center; 
+            margin: 2rem 5%; 
+        }
+        .interaction-box h2 { font-size: 1.75rem; margin-bottom: 1rem; color: #1e1b4b; }
+        .interaction-box p { color: var(--text-muted); max-width: 800px; margin: 0 auto; font-size: 1.05rem; }
+
+        /* --- Tech Grid --- */
+        .section-header { text-align: center; margin: 6rem 5% 3rem; }
+        .section-header h2 { font-size: 2.25rem; font-weight: 800; margin-bottom: 1rem; }
+        
+        .tech-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+            gap: 1.5rem; 
+            padding: 0 5%; 
+            max-width: 1200px; 
+            margin: 0 auto; 
+        }
+        .tech-card { 
+            padding: 2.5rem; 
+            border: 1px solid var(--border); 
+            border-radius: 20px; 
+            background: white; 
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+        .tech-card:hover { border-color: var(--primary); box-shadow: var(--shadow); transform: translateY(-5px); }
+        .tech-icon { 
+            width: 50px; height: 50px; background: #eef2ff; 
+            border-radius: 12px; display: flex; align-items: center; 
+            justify-content: center; color: var(--primary); margin-bottom: 1.5rem; font-size: 1.5rem; 
+        }
+
+        /* --- Features Section --- */
+        .features-section { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 4rem; 
+            padding: 6rem 5%; 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            align-items: center; 
+        }
+        .feat-item { display: flex; gap: 1.25rem; margin-bottom: 2rem; }
+        .feat-item i { color: var(--primary); font-size: 1.25rem; margin-top: 0.25rem; }
+
+        /* --- CTA --- */
+        .cta-bottom { 
+            background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); 
+            border-radius: 32px; 
+            margin: 4rem 5%; 
+            padding: 4rem 2rem; 
+            text-align: center; 
+            color: white;
+        }
+        .cta-bottom h2 { font-size: 2.5rem; margin-bottom: 1rem; color: white; }
+        .cta-bottom p { color: rgba(255,255,255,0.8); margin-bottom: 2.5rem; font-size: 1.1rem; }
+        .cta-bottom .btn-outline { background: transparent; color: white; border-color: rgba(255,255,255,0.3); }
+        .cta-bottom .btn-outline:hover { background: rgba(255,255,255,0.1); }
+
+        /* --- Footer --- */
+        footer { border-top: 1px solid var(--border); padding: 4rem 5%; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 3rem; }
+        .footer-info h4 { font-weight: 800; margin-bottom: 1rem; color: var(--primary); }
+        .footer-links { display: flex; flex-direction: column; gap: 0.75rem; list-style: none; }
+        .footer-links a { text-decoration: none; color: var(--text-muted); font-size: 0.9rem; }
+
+        /* --- Mobile Responsive Adjustments --- */
+        @media (max-width: 768px) {
+            .nav-links { display: none; }
+            nav { padding: 1rem 5%; }
+            
+            .hero { padding-top: 4rem; }
+            .hero-btns { flex-direction: column; padding: 0 1rem; }
+            .hero-btns .btn-primary, .hero-btns .btn-outline { width: 100%; }
+
+            .features-section { grid-template-columns: 1fr; gap: 3rem; }
+            .tech-grid { grid-template-columns: 1fr; }
+            
+            .cta-bottom h2 { font-size: 1.8rem; }
+            .interaction-box { margin: 1rem 5%; padding: 2rem 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <a href="#" class="logo">CourseMate AI</a>
+        <ul class="nav-links">
+            <li><a href="#about">About</a></li>
+            <li><a href="#tech">Tech Stack</a></li>
+            <li><a href="#features">Features</a></li>
+        </ul>
+        <a href="app.html" class="btn-primary" style="padding: 0.5rem 1rem; font-size: 0.85rem;">Try It Now</a>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Learn Smarter with AI</h1>
+            <p>The intelligent RAG-powered assistant that turns your PDFs and Documents into interactive knowledge. Ask questions, get citations, and master your materials instantly.</p>
+            <div class="hero-btns">
+                <a href="app.html" class="btn-primary">Try CourseMate Free <i class="fas fa-rocket"></i></a>
+                <a href="#about" class="btn-outline">How it works <i class="fas fa-link"></i></a>
+            </div>
+        </div>
+        <div class="hero-visual">
+            <img src="files/ChatGPT Image May 2, 2026, 07_13_36 PM.png" alt="CourseMate AI Dashboard Mockup">
+        </div>
+    </section>
+
+    <div class="interaction-box" id="about">
+        <h2>Multi-modal Document Intelligence</h2>
+        <p>Using RAG-based architecture and <strong>Vision OCR</strong>, CourseMate AI processes scanned PDFs and Word Documents, converting complex layouts into high-dimensional vector embeddings for grounded, hallucination-free querying.</p>
+    </div>
+
+    <div class="section-header" id="tech">
+        <h2>Modern GenAI Stack</h2>
+        <p style="color: var(--text-muted);">Production-grade components for secure document analysis.</p>
+    </div>
+
+    <div class="tech-grid">
+        <div class="tech-card">
+            <div class="tech-icon"><i class="fas fa-shield-alt"></i></div>
+            <h3>Authentication</h3>
+            <p>Secure Firebase Integration for individual user sessions and private chat isolation.</p>
+        </div>
+        <div class="tech-card">
+            <div class="tech-icon"><i class="fas fa-database"></i></div>
+            <h3>SQL & Vector Store</h3>
+            <p>SQLAlchemy-backed chat history persistence paired with ChromaDB for semantic retrieval.</p>
+        </div>
+        <div class="tech-card">
+            <div class="tech-icon"><i class="fas fa-robot"></i></div>
+            <h3>Dual-Engine AI</h3>
+            <p>Intelligent fallback logic between Gemini (Vision OCR) and Mistral for maximum uptime.</p>
+        </div>
+    </div>
+
+    <section class="features-section" id="features">
+        <div class="features-list">
+            <h2 style="font-size: 2rem; margin-bottom: 2rem;">Why CourseMate?</h2>
+            <div class="feat-item">
+                <i class="fas fa-file-alt"></i>
+                <div class="feat-text">
+                    <h4 style="font-weight: 700;">Multi-modal OCR</h4>
+                    <p style="font-size: 0.95rem; color: var(--text-muted);">Supports both standard PDFs and scanned image-based documents using vision-enabled AI.</p>
+                </div>
+            </div>
+            <div class="feat-item">
+                <i class="fas fa-history"></i>
+                <div class="feat-text">
+                    <h4 style="font-weight: 700;">Persistent Chat History</h4>
+                    <p style="font-size: 0.95rem; color: var(--text-muted);">Secure, user-specific conversation logs stored via persistent database sessions.</p>
+                </div>
+            </div>
+            <div class="feat-item">
+                <i class="fas fa-lock"></i>
+                <div class="feat-text">
+                    <h4 style="font-weight: 700;">Privacy First</h4>
+                    <p style="font-size: 0.95rem; color: var(--text-muted);">Automated, ephemeral file management deletes user data 10 minutes after session expiry.</p>
+                </div>
+            </div>
+            <div class="feat-item">
+                <i class="fas fa-brain"></i>
+                <div class="feat-text">
+                    <h4 style="font-weight: 700;">Grounded RAG</h4>
+                    <p style="font-size: 0.95rem; color: var(--text-muted);">Answers are strictly bound to your provided context with explicit citations.</p>
+                </div>
+            </div>
+        </div>
+        <div class="hero-visual" style="margin-top: 0;">
+             <div style="background: white; border: 1px solid var(--border); border-radius: 20px; padding: 1.5rem; box-shadow: var(--shadow);">
+                <div style="display: flex; gap: 8px; margin-bottom: 1rem;">
+                    <div style="width: 10px; height: 10px; border-radius: 50%; background: #ff5f57;"></div>
+                    <div style="width: 10px; height: 10px; border-radius: 50%; background: #ffbd2e;"></div>
+                    <div style="width: 10px; height: 10px; border-radius: 50%; background: #27c93f;"></div>
+                </div>
+                <p style="font-size: 0.85rem; background: #f1f5f9; padding: 10px; border-radius: 8px; margin-bottom: 10px;">User: Summarize the safety protocols...</p>
+                <p style="font-size: 0.85rem; background: #eef2ff; border: 1px solid #c7d2fe; padding: 10px; border-radius: 8px; margin-left: 20px;">AI: Based on the OCR scan of page 12, the safety protocols are...</p>
+             </div>
+        </div>
+    </section>
+
+    <section class="cta-bottom">
+        <h2>Ready to master your documents?</h2>
+        <p>Join researchers and students using CourseMate AI for smarter, authenticated learning.</p>
+        <div class="hero-btns">
+            <a href="app.html" class="btn-primary" style="background: white; color: var(--primary);">Get Started Now</a>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-info">
+            <h4>CourseMate AI</h4>
+            <p>© 2026 CourseMate AI. Built for the future of education.</p>
+            <p style="font-size: 0.8rem; margin-top: 0.5rem;">Developed by Arjav Jain</p>
+        </div>
+    </footer>
+
+</body>
+</html>
