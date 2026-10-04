@@ -96,9 +96,14 @@ window.COURSEMATE_API_URL = "https://your-backend.example.com";
 
 The frontend then uses that backend URL. Add the GitHub Pages domain and your backend domain to Firebase Authentication's authorized domains, and configure backend CORS if you restrict origins. Do not put backend API keys or the Firebase Admin service-account JSON in GitHub Pages.
 
-This repository includes a GitHub Pages workflow that generates `config.js` during deployment. Add these repository secrets under **Settings → Secrets and variables → Actions**:
+This repository includes a GitHub Pages workflow that generates `config.js` during deployment. Add `FIREBASE_API_KEY` as a repository secret, and add the remaining public Firebase Web App values as repository variables under **Settings → Secrets and variables → Actions**:
+
+Secret:
 
 - `FIREBASE_API_KEY`
+
+Variables:
+
 - `FIREBASE_AUTH_DOMAIN`
 - `FIREBASE_PROJECT_ID`
 - `FIREBASE_STORAGE_BUCKET`
